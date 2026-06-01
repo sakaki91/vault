@@ -4,4 +4,4 @@ vault
 installation:
 -------------
 
-	$ curl -Os https://raw.githubusercontent.com/sakaki91/vault/refs/heads/main/vault && bash vault --help
+	$ curl -Os https://raw.githubusercontent.com/sakaki91/vault/refs/heads/main/vault && bash vault
