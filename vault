@@ -7,7 +7,7 @@ VAULT_VERSION="0.2"
 [[ ! -d "$HOME/.local/bin" ]] && mkdir -p "$HOME/.local/bin"
 [[ ! -f "$VAULT_DIR/.logo" ]] && curl -o "$VAULT_DIR/.logo" https://raw.githubusercontent.com/sakaki91/vault/refs/heads/main/.logo &>> /dev/null
 [[ ! -f "$VAULT_DIR/README" ]] && curl -o "$VAULT_DIR/README" https://raw.githubusercontent.com/sakaki91/vault/refs/heads/main/README &>> /dev/null
-[[ ! -f "$VAULT_DIR/vault" ]] && mv "$(pwd)/vault" "$VAULT_DIR/"
+[[ ! -f "$VAULT_DIR/vault" ]] && mv "$(pwd)/vault" "$VAULT_DIR/" && chmod +x "$VAULT_DIR/vault"
 [[ ! -f "$HOME/.local/bin/vault" ]] && ln -sf "$VAULT_DIR/vault" "$HOME/.local/bin/vault"
 
 function launchGame(){
