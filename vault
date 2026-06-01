@@ -1,67 +1,102 @@
 #!/bin/bash
-#NOTES: adicionar o read -e na selecao (adicao e subtracao) dos jogos para autocompletar usando o BASH
 
-VAULT_DIR=$(pwd)
-VAULT_VERSION="0.1-beta"
+VAULT_DIR="${HOME}/.local/share/vault"
+VAULT_VERSION="0.2"
 
-[[ ! -f "$VAULT_DIR/.logo" ]] && curl -Os https://raw.githubusercontent.com/sakaki91/vault/refs/heads/main/.logo
+[[ ! -d "$VAULT_DIR" ]] && mkdir -p "$VAULT_DIR"/{config,prefix_tree}
 [[ ! -d "$HOME/.local/bin" ]] && mkdir -p "$HOME/.local/bin"
-[[ ! -f "$HOME/.local/bin/vault" ]] && ln -sf $(pwd)/vault "$HOME/.local/bin/vault"
+[[ ! -f "$VAULT_DIR/.logo" ]] && curl -o "$VAULT_DIR/.logo" https://raw.githubusercontent.com/sakaki91/vault/refs/heads/main/.logo &>> /dev/null
+[[ ! -f "$VAULT_DIR/README" ]] && curl -o "$VAULT_DIR/README" https://raw.githubusercontent.com/sakaki91/vault/refs/heads/main/README &>> /dev/null
+[[ ! -f "$VAULT_DIR/vault" ]] && mv "$(pwd)/vault" "$VAULT_DIR/"
+[[ ! -f "$HOME/.local/bin/vault" ]] && ln -sf "$VAULT_DIR/vault" "$HOME/.local/bin/vault"
 
 function launchGame(){
-	while true; do
-		printf "List of games added:\n\n$(ls "$VAULT_DIR/config")\n\n"
-		read -p "$ " launchGameSelection
-		[[ ! -f "$VAULT_DIR/config/$launchGameSelection" ]] && printf "\e[1;91mERROR:\e[0m Invalid Option.\n" && sleep 1.5 && clear
-		source "$VAULT_DIR/config/$launchGameSelection"
-		WINEPREFIX="$PREFIX" wine "$EXEC"
-		wineserver -w
-		sleep 1.5
-		printf "\nDone!\n"
-		break
-	done
+	if [[ ! $(ls "$VAULT_DIR/config") ]]; then
+		printf "No games have been added yet, add them with: vault --add\n"
+	else
+		while true; do
+			clear
+			printf "List of games added:\n\n$(ls "$VAULT_DIR/config")\n\n"
+			read -p "$ " launchGameSelection
+			if [[ ! -f "$VAULT_DIR/config/$launchGameSelection" ]]; then
+			       printf "\e[1;91mERROR:\e[0m This option doesn't exist.\n" && sleep 1.5
+			else
+				source "$VAULT_DIR/config/$launchGameSelection"
+				WINEPREFIX="$PREFIX" wine "$EXEC"
+				wineserver -w
+				sleep 1.5
+				printf "\nDone!\n"
+				break
+			fi
+		done
+	fi
 }
 
 function addGame(){
-	[[ ! -d "$VAULT_DIR"/{config,prefix_tree} ]] && mkdir -p "$VAULT_DIR"/{config,prefix_tree}
-	read -p "Name: " addGameName
-	read -p "Exec: " addGameExec
-	[[ -z "$addGameName" ]] && printf "\e[1;91mERROR:\e[0m Empty value.\n" && exit
-	(
-		cd "$VAULT_DIR"/config
-		echo "NAME='$addGameName'" > "$addGameName"
-		echo "EXEC='$addGameExec'" >> "$addGameName"
-		echo "PREFIX='$VAULT_DIR/prefix_tree/$addGameName'" >> "$addGameName"
-	)
-	mkdir -p "$VAULT_DIR/prefix_tree/$addGameName"
+	while true; do
+		clear
+		read -p "Name: " addGameName
+		read -e -p "Exec: " addGameExec
+		if [[ -z "$addGameName" || -z $addGameExec ]]; then
+			printf "\e[1;91mERROR:\e[0m Empty value.\n" && sleep 1.5
+		else
+		 	(
+			cd "$VAULT_DIR"/config
+			echo "NAME='$addGameName'" > "$addGameName"
+			echo "EXEC='$addGameExec'" >> "$addGameName"
+			echo "PREFIX='$VAULT_DIR/prefix_tree/$addGameName'" >> "$addGameName"
+			mkdir -p "$VAULT_DIR/prefix_tree/$addGameName"
+			)
+			break
+		fi
+	done
 }
 
 function delGame(){
 	while true; do
-		clear
-		printf "List of games added:\n"
-		printf "\n$(ls "$VAULT_DIR/prefix_tree")\n\n"
-		read -p "Name of the game to be removed: " delGameName
-		[[ ! -f "$VAULT_DIR/config/$delGameName" || ! -d "$VAULT_DIR/prefix_tree/$delGameName" ]] && printf "\e[1;91mERROR:\e[0m This option doesn't exist.\n" && sleep 1.5 && exit
-		clear
-		printf "Do you really want to remove the $delGameName?\n\n"
-		read -p "[Y/n] " delGameConfirm
-		if [[ $delGameConfirm == "Y" || $delGameConfirm == "y" ]]; then
-			rm -rf "$VAULT_DIR/prefix_tree/$delGameName"
-			rm -f "$VAULT_DIR/config/$delGameName"
-			break
-		elif [[ $delGameConfirm == "N" || $delGameConfirm == "n" ]]; then
-			break
+		if [[ ! $(ls "$VAULT_DIR/config") ]]; then
+			printf "No games available for removal.\n" && break
 		else
-			printf "\e[1;91mERROR:\e[0m Invalid option.\n"
-			sleep 1.5
+			clear
+			printf "List of games added:\n"
+			printf "\n$(ls "$VAULT_DIR/prefix_tree")\n\n"
+			read -p "Name of the game to be removed: " delGameName
+			if [[ ! -f "$VAULT_DIR/config/$delGameName" ]]; then
+				printf "\e[1;91mERROR:\e[0m This option doesn't exist.\n" && sleep 1.5
+			else
+				while true; do
+					clear
+					printf "Do you really want to remove the $delGameName?\n\n"
+					read -p "[Y/n] " delGameConfirm
+					[[ -z "$delGameConfirm" ]] && delGameConfirm="y"
+					if [[ $delGameConfirm == "Y" || $delGameConfirm == "y" ]]; then
+						rm -rf "$VAULT_DIR/prefix_tree/$delGameName"
+						rm -f "$VAULT_DIR/config/$delGameName"
+						break 2
+					elif [[ $delGameConfirm == "N" || $delGameConfirm == "n" ]]; then
+						break 1
+					else
+						printf "\e[1;91mERROR:\e[0m Invalid option.\n"
+						sleep 1.5
+					fi
+				done
+			fi
 		fi
 	done
 }
 
 case $1 in
 	"--list")
-		ls "$VAULT_DIR/prefix_tree"
+		if [[ ! $(ls "$VAULT_DIR/prefix_tree") ]]; then
+			printf "No games added.\n" && exit
+		else
+			ls "$VAULT_DIR/prefix_tree"
+		fi
+	;;
+	"--update")
+		[[ ! -d "$VAULT_DIR" ]] && mkdir -p "$VAULT_DIR"
+		cp -r "$(pwd)/vault" "$VAULT_DIR/"
+		printf "\n$(ls -a "$VAULT_DIR")\n\n"
 	;;
 	"--launch")
 		launchGame
@@ -72,19 +107,20 @@ case $1 in
 	"--del")
 		delGame
 	;;
-	"--help")
-		cat "$VAULT_DIR"/.logo
-		printf "%-20s %0s\n" "vault --help" "Show this message."
-		printf "%-20s %0s\n\n" "vault --version" "Show vault version."
-		printf "%-20s %0s\n" "vault --list" "List of added games."
-		printf "%-20s %0s\n" "vault --launch" "The game runs based on its respective name."
-		printf "%-20s %0s\n" "vault --add" "Add a new game."
-		printf "%-20s %0s\n\n" "vault --del" "Remove a game."
-	;;
 	"--version")
 		printf "vault-$VAULT_VERSION\n"
 	;;
-	*)
-		printf "\e[1;91mERROR:\e[0m Invalid option.\n"
+	"--help")
+		cat "$VAULT_DIR"/.logo
+		printf "%-20s %0s\n" "$ vault" "Show this message"
+		printf "%-20s %0s\n" "vault --version" "Show vault version."
+		printf "%-20s %0s\n\n" "vault --update" "Update the vault binaries locally."
+		printf "%-20s %0s\n" "vault --list" "List of added games."
+		printf "%-20s %0s\n" "vault --launch" "Launch a game."
+		printf "%-20s %0s\n" "vault --add" "Add a new game."
+		printf "%-20s %0s\n\n" "vault --del" "Remove a game."
 	;;
+	*)
+		printf "\e[1;91mERROR:\e[0m Invalid option $1\n"
+		vault --help
 esac
