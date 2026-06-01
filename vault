@@ -1,7 +1,7 @@
 #!/bin/bash
 
 VAULT_DIR="${HOME}/.local/share/vault"
-VAULT_VERSION="0.2"
+VAULT_VERSION="0.4"
 
 [[ ! -d "$VAULT_DIR" ]] && mkdir -p "$VAULT_DIR"/{config,prefix_tree}
 [[ ! -d "$HOME/.local/bin" ]] && mkdir -p "$HOME/.local/bin"
@@ -110,17 +110,14 @@ case $1 in
 	"--version")
 		printf "vault-$VAULT_VERSION\n"
 	;;
-	"--help")
+	*)
 		cat "$VAULT_DIR"/.logo
-		printf "%-20s %0s\n" "$ vault" "Show this message"
 		printf "%-20s %0s\n" "vault --version" "Show vault version."
 		printf "%-20s %0s\n\n" "vault --update" "Update the vault binaries locally."
+		printf "%-20s %0s\n" "vault" "Show this message."
 		printf "%-20s %0s\n" "vault --list" "List of added games."
 		printf "%-20s %0s\n" "vault --launch" "Launch a game."
 		printf "%-20s %0s\n" "vault --add" "Add a new game."
 		printf "%-20s %0s\n\n" "vault --del" "Remove a game."
 	;;
-	*)
-		printf "\e[1;91mERROR:\e[0m Invalid option $1\n"
-		vault --help
 esac
