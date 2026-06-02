@@ -1,7 +1,28 @@
-vault
-=====
+Vault
+A small and lightweight program and game launcher via CLI, written in Bash!
+===========================================================================
 
-installation:
+
+What is Vault?
+--------------
+
+Vault started as an individual and private project with a single purpose: to solve my problem of bringing together various Linux/Wine games in a centralized, secure, and above all, clean and organized location.
+However, after achieving the first minimally stable version (which is not the case with the current one), I simply uploaded the project publicly.
+It's just a hobby and a way to automate tedious and repetitive tasks.
+
+
+Installation:
 -------------
 
 	$ curl -Os https://raw.githubusercontent.com/sakaki91/vault/refs/heads/main/vault && bash vault
+
+If you don't have your local binaries folder set up, please run:
+
+	$ echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME"/.bashrc
+
+or if you use zsh/fish, adapt it to your shell's .rc file.
+
+
+* But why??
+
+This allows you to call it using only "vault" in the terminal, but using your local binaries folder, without interfering with the system's root directories.
