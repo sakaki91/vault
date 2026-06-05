@@ -1,40 +1,75 @@
 #!/bin/bash
 
 VAULT_DIR="${HOME}/.local/share/vault"
-VAULT_VERSION="0.5"
+VAULT_VERSION="0.6"
 
 [[ ! -d "$VAULT_DIR" ]] && mkdir -p "$VAULT_DIR"/{config,prefix_tree}
 [[ ! -d "$HOME/.local/bin" ]] && mkdir -p "$HOME"/.local/bin
 [[ ! -f "$VAULT_DIR/.logo" ]] && curl -o "$VAULT_DIR/.logo" https://raw.githubusercontent.com/sakaki91/vault/refs/heads/main/.logo &>> /dev/null
 [[ ! -f "$VAULT_DIR/README" ]] && curl -o "$VAULT_DIR/README" https://raw.githubusercontent.com/sakaki91/vault/refs/heads/main/README &>> /dev/null
-[[ ! -f "$VAULT_DIR/vault" ]] && mv "$(pwd)/vault" "$VAULT_DIR/" && chmod +x "$VAULT_DIR/vault"
+[[ ! -f "$VAULT_DIR/vault" ]] && cp "$(pwd)/vault" "$VAULT_DIR/" && chmod +x "$VAULT_DIR/vault"
 [[ ! -f "$HOME/.local/bin/vault" ]] && ln -sf "$VAULT_DIR/vault" "$HOME/.local/bin/vault"
 
 function launchGame(){
-	if [[ ! $(ls "$VAULT_DIR/config") ]]; then
-		printf "No games have been added yet, add them with: vault --add\n"
-	else
-		while true; do
-			clear
-			printf "List of games added:\n\n$(ls "$VAULT_DIR/config")\n\n"
-			read -p "$ " launchGameSelection
-			if [[ ! -f "$VAULT_DIR/config/$launchGameSelection" ]]; then
-			       printf "\e[1;91mERROR:\e[0m This option doesn't exist.\n" && sleep 1.5
-			else
-				source "$VAULT_DIR/config/$launchGameSelection"
-				if [[ $NATIVE_RUNNER == 1 ]]; then
-					chmod +x "$EXEC"
-					"$EXEC"
+	(
+		if [[ ! $(ls "$VAULT_DIR/config") ]]; then
+			printf "No games have been added yet, add them with: vault --add\n"
+		else
+			while true; do
+				clear
+				printf "List of games added:\n\n$(ls "$VAULT_DIR/config")\n\n"
+				cd "$VAULT_DIR"/config
+				read -e -p "$ " launchGameSelection
+				if [[ ! -f "$VAULT_DIR/config/$launchGameSelection" ]]; then
+				        printf "\e[1;91mERROR:\e[0m This option doesn't exist.\n" && sleep 1.5
 				else
-					WINEPREFIX="$PREFIX" wine "$EXEC"
-					wineserver -w
+					source "$VAULT_DIR/config/$launchGameSelection"
+					printf "\e[1;93mWait...\e[0m\n"
+					sleep 1.5
+					if [[ $NATIVE_RUNNER == 1 ]]; then
+						chmod +x "$EXEC"
+						"$EXEC"
+					else
+						WINEPREFIX="$PREFIX" wine "$EXEC"
+						wineserver -w
+					fi
+					sleep 1.5
+					printf "\n\e[1;92mDone!\e[0m\n"
+					break			
 				fi
-				sleep 1.5
-				printf "Done!\n"
-				break
+			done
+		fi
+	)
+}
+
+function cfgGamePFX(){
+	(
+		while true; do
+			if [[ ! $(ls "$VAULT_DIR/config") ]]; then
+				printf "No games available for removal.\n" && break
+			else
+				clear
+				printf "List of games added:\n"
+				printf "\n$(ls "$VAULT_DIR/config")\n\n"	
+				cd "$VAULT_DIR"/config
+				read -e -p "Prefix name for maintenance: " maintGameName
+				if [[ "$maintGameName" == ":q" ]]; then
+					exit
+				elif [[ ! -f "$VAULT_DIR/config/$maintGameName" ]]; then
+					printf "\e[1;91mERROR:\e[0m This option doesn't exist.\n" && sleep 1.5
+				else
+					source "$maintGameName"
+					if [[ -z "$PREFIX" || "$PREFIX" == "$maintGameName" ]]; then
+						printf "\e[1;91mERROR:\e[0m '$maintGameName' is a Native game and doesn't have a WINEPREFIX.\n"
+						sleep 2.5
+					else
+						export WINEPREFIX="$PREFIX" && printf "\n\e[1mActive Prefix: $maintGameName ($PREFIX)\n\e[0m\nAny command involving wine/winetricks typed in this shell will be executed exclusively on the prefix selected later.\nTo continue after this, simply type: exit\n\n" && bash
+						printf "\e[1;92mEXIT_SUCCESS\e[0m\n" && break
+					fi
+				fi
 			fi
 		done
-	fi
+	)
 }
 
 function addGame(){
@@ -51,9 +86,9 @@ function addGame(){
 				clear && printf "Name: $addGameName\nExec: $addGameExec\n"
 			fi
 		done
-		if [[ -z "$addGameName" || -z $addGameExec || -z "$addGameArq" ]]; then
+		if [[ -z "$addGameName" || -z "$addGameExec" || -z "$addGameArq" ]]; then
 			printf "\e[1;91mERROR:\e[0m Empty value.\n" && sleep 1.5
-		elif [[ "$addGameArq" == "Native" || "$addGameArq" == "native" ]]; then
+		elif [[ "$addGameArq" == "Native" || "$addGameArq" == "native" || "$addGameArq" == "n" ]]; then
 			(
 				cd "$VAULT_DIR/config"
 				echo "NAME='$addGameName'" > "$addGameName"
@@ -61,7 +96,7 @@ function addGame(){
 				echo "NATIVE_RUNNER='1'" >> "$addGameName"
 			)
 			break
-		elif [[ "$addGameArq" == "Wine" || "$addGameArq" == "wine" ]]; then
+		elif [[ "$addGameArq" == "Wine" || "$addGameArq" == "wine" || "$addGameArq" == "w" ]]; then
 		 	(
 				cd "$VAULT_DIR"/config
 				echo "NAME='$addGameName'" > "$addGameName"
@@ -75,36 +110,39 @@ function addGame(){
 }
 
 function delGame(){
-	while true; do
-		if [[ ! $(ls "$VAULT_DIR/config") ]]; then
-			printf "No games available for removal.\n" && break
-		else
-			clear
-			printf "List of games added:\n"
-			printf "\n$(ls "$VAULT_DIR/config")\n\n"
-			read -e -p "Name of the game to be removed: " delGameName
-			if [[ ! -f "$VAULT_DIR/config/$delGameName" ]]; then
-				printf "\e[1;91mERROR:\e[0m This option doesn't exist.\n" && sleep 1.5
+	(
+		while true; do
+			if [[ ! $(ls "$VAULT_DIR/config") ]]; then
+				printf "No games available for removal.\n" && break
 			else
-				while true; do
-					clear
-					printf "Do you really want to remove the $delGameName?\n\n"
-					read -p "[Y/n] " delGameConfirm
-					[[ -z "$delGameConfirm" ]] && delGameConfirm="y"
-					if [[ $delGameConfirm == "Y" || $delGameConfirm == "y" ]]; then
-						rm -rf "$VAULT_DIR/prefix_tree/$delGameName"
-						rm -f "$VAULT_DIR/config/$delGameName"
-						break 2
-					elif [[ $delGameConfirm == "N" || $delGameConfirm == "n" ]]; then
-						break 1
-					else
-						printf "\e[1;91mERROR:\e[0m Invalid option.\n"
-						sleep 1.5
-					fi
-				done
+				clear
+				printf "List of games added:\n"
+				printf "\n$(ls "$VAULT_DIR/config")\n\n"	
+				cd "$VAULT_DIR"/config
+				read -e -p "Name of the game to be removed: " delGameName
+				if [[ ! -f "$VAULT_DIR/config/$delGameName" ]]; then
+					printf "\e[1;91mERROR:\e[0m This option doesn't exist.\n" && sleep 1.5
+				else
+					while true; do
+						clear
+						printf "Do you really want to remove the $delGameName?\n\n"
+						read -p "[Y/n] " delGameConfirm
+						[[ -z "$delGameConfirm" ]] && delGameConfirm="y"
+						if [[ $delGameConfirm == "Y" || $delGameConfirm == "y" ]]; then
+							rm -rf "$VAULT_DIR/prefix_tree/$delGameName"
+							rm -f "$VAULT_DIR/config/$delGameName"
+							break 2
+						elif [[ $delGameConfirm == "N" || $delGameConfirm == "n" ]]; then
+							break
+						else
+							printf "\e[1;91mERROR:\e[0m Invalid option.\n"
+							sleep 1.5
+						fi
+					done
+				fi
 			fi
-		fi
-	done
+		done
+	)
 }
 
 case $1 in
@@ -122,6 +160,9 @@ case $1 in
 	"--launch")
 		launchGame
 	;;
+	"--configure-prefix")
+		cfgGamePFX
+	;;
 	"--add")
 		addGame
 	;;
@@ -133,12 +174,13 @@ case $1 in
 	;;
 	*)
 		cat "$VAULT_DIR"/.logo
-		printf "%-20s %0s\n" "vault --version" "Show vault version."
-		printf "%-20s %0s\n\n" "vault --update" "Update the vault binaries locally."
-		printf "%-20s %0s\n" "vault" "Show this message."
-		printf "%-20s %0s\n" "vault --list" "List of added games."
-		printf "%-20s %0s\n" "vault --launch" "Launch a game."
-		printf "%-20s %0s\n" "vault --add" "Add a new game."
-		printf "%-20s %0s\n\n" "vault --del" "Remove a game."
+		printf "%-30s %0s\n" "vault --version" "Show vault version."
+		printf "%-30s %0s\n\n" "vault --update" "Update the vault binaries locally."
+		printf "%-30s %0s\n" "vault" "Show this message."
+		printf "%-30s %0s\n" "vault --list" "List of added games."
+		printf "%-30s %0s\n" "vault --launch" "Launch a game."
+		printf "%-30s %0s\n" "vault --add" "Add a new game."
+		printf "%-30s %0s\n" "vault --del" "Remove a game."
+		printf "%-30s %0s\n\n" "vault --configure-prefix" "Opens a subshell with the prefix set for easy maintenance."
 	;;
 esac
