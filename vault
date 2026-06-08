@@ -1,12 +1,10 @@
 #!/bin/bash
 
 VAULT_DIR="${HOME}/.local/share/vault"
-VAULT_VERSION="0.6"
+VAULT_VERSION="0.7"
 
 [[ ! -d "$VAULT_DIR" ]] && mkdir -p "$VAULT_DIR"/{config,prefix_tree}
 [[ ! -d "$HOME/.local/bin" ]] && mkdir -p "$HOME"/.local/bin
-[[ ! -f "$VAULT_DIR/.logo" ]] && curl -o "$VAULT_DIR/.logo" https://raw.githubusercontent.com/sakaki91/vault/refs/heads/main/.logo &>> /dev/null
-[[ ! -f "$VAULT_DIR/README" ]] && curl -o "$VAULT_DIR/README" https://raw.githubusercontent.com/sakaki91/vault/refs/heads/main/README &>> /dev/null
 [[ ! -f "$VAULT_DIR/vault" ]] && cp "$(pwd)/vault" "$VAULT_DIR/" && chmod +x "$VAULT_DIR/vault"
 [[ ! -f "$HOME/.local/bin/vault" ]] && ln -sf "$VAULT_DIR/vault" "$HOME/.local/bin/vault"
 
@@ -173,7 +171,12 @@ case $1 in
 		printf "vault-$VAULT_VERSION\n"
 	;;
 	*)
-		cat "$VAULT_DIR"/.logo
+		printf "\nY88b      /                    888   d8	\n"   
+		printf " Y88b    /    /~~~8e  888  888 888 _d88__\n"
+		printf "  Y88b  /         88b 888  888 888  888  \n"
+		printf "   Y888/     e88~-888 888  888 888  888  \n"
+		printf "    Y8/     C888  888 888  888 888  888  \n"
+		printf '     Y       "88_-888 "88_-888 888  "88_/\n\n'
 		printf "%-30s %0s\n" "vault --version" "Show vault version."
 		printf "%-30s %0s\n\n" "vault --update" "Update the vault binaries locally."
 		printf "%-30s %0s\n" "vault" "Show this message."
