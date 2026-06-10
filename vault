@@ -1,7 +1,7 @@
 #!/bin/bash
 
 VAULT_DIR="${HOME}/.local/share/vault"
-VAULT_VERSION="0.7"
+VAULT_VERSION="0.8"
 
 [[ ! -d "$VAULT_DIR" ]] && mkdir -p "$VAULT_DIR"/{config,prefix_tree}
 [[ ! -d "$HOME/.local/bin" ]] && mkdir -p "$HOME"/.local/bin
@@ -44,7 +44,7 @@ function cfgGamePFX(){
 	(
 		while true; do
 			if [[ ! $(ls "$VAULT_DIR/config") ]]; then
-				printf "No games available for removal.\n" && break
+				printf "No games available for maintenance.\n" && break
 			else
 				clear
 				printf "List of games added:\n"
@@ -144,6 +144,17 @@ function delGame(){
 }
 
 case $1 in
+	"--version")
+		printf "vault-$VAULT_VERSION\n"
+	;;
+	"--dir")
+		xdg-open "$HOME/.local/share/vault" &>> /dev/null
+	        printf "If nothing happens, go to: \e[1m$HOME/.local/share/vault\e[0m\n"
+	;;
+	"--update")
+		[[ ! -d "$VAULT_DIR" ]] && mkdir -p "$VAULT_DIR"
+		cp -r "$(pwd)/vault" "$VAULT_DIR/"
+	;;
 	"--list")
 		if [[ ! $(ls "$VAULT_DIR/config") ]]; then
 			printf "No games added.\n" && exit
@@ -151,15 +162,8 @@ case $1 in
 			printf "\n$(ls "$VAULT_DIR/config")\n\n"
 		fi
 	;;
-	"--update")
-		[[ ! -d "$VAULT_DIR" ]] && mkdir -p "$VAULT_DIR"
-		cp -r "$(pwd)/vault" "$VAULT_DIR/"
-	;;
 	"--launch")
 		launchGame
-	;;
-	"--configure-prefix")
-		cfgGamePFX
 	;;
 	"--add")
 		addGame
@@ -167,8 +171,8 @@ case $1 in
 	"--del")
 		delGame
 	;;
-	"--version")
-		printf "vault-$VAULT_VERSION\n"
+	"--configure-prefix")
+		cfgGamePFX
 	;;
 	*)
 		printf "\nY88b      /                    888   d8	\n"   
@@ -178,8 +182,8 @@ case $1 in
 		printf "    Y8/     C888  888 888  888 888  888  \n"
 		printf '     Y       "88_-888 "88_-888 888  "88_/\n\n'
 		printf "%-30s %0s\n" "vault --version" "Show vault version."
+		printf "%-30s %0s\n" "vault --dir" "Opens the local vault files."
 		printf "%-30s %0s\n\n" "vault --update" "Update the vault binaries locally."
-		printf "%-30s %0s\n" "vault" "Show this message."
 		printf "%-30s %0s\n" "vault --list" "List of added games."
 		printf "%-30s %0s\n" "vault --launch" "Launch a game."
 		printf "%-30s %0s\n" "vault --add" "Add a new game."
