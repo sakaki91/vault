@@ -151,6 +151,7 @@ case $1 in
 		[[ ! -d "$VAULT_DIR" ]] && mkdir -p "$VAULT_DIR"
 		(
 			cd "$VAULT_DIR"
+			rm -f vault
 			curl -Os https://raw.githubusercontent.com/sakaki91/vault/refs/heads/main/vault
 			chmod +x vault	
 		)
