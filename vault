@@ -147,15 +147,6 @@ case $1 in
 	"--version")
 		printf "vault-$VAULT_VERSION\n"
 	;;
-	"--update")
-		[[ ! -d "$VAULT_DIR" ]] && mkdir -p "$VAULT_DIR"
-		(
-			cd "$VAULT_DIR"
-			rm -f vault
-			curl -Os https://raw.githubusercontent.com/sakaki91/vault/refs/heads/main/vault
-			chmod +x vault	
-		)
-	;;
 	"--dir")
 		xdg-open "$HOME/.local/share/vault" &>> /dev/null
  	        printf "If nothing happens, go to: \e[1m$HOME/.local/share/vault\e[0m\n"
@@ -187,7 +178,6 @@ case $1 in
 		printf "    Y8/     C888  888 888  888 888  888  \n"
 		printf '     Y       "88_-888 "88_-888 888  "88_/\n\n'
 		printf "%-30s %0s\n" "vault --version" "Show vault version."
-		printf "%-30s %0s\n" "vault --update" "Update the vault binaries locally."
 		printf "%-30s %0s\n\n" "vault --dir" "Opens the local vault files."
 		printf "%-30s %0s\n" "vault --list" "List of added games."
 		printf "%-30s %0s\n" "vault --launch" "Launch a game."
