@@ -37,5 +37,5 @@ Updating:
 
 To update, simply run:
 
-	$ rm -f $HOME/.local/share/vault
+	$ rm -f $HOME/.local/share/vault/vault
 	$ curl -Os https://raw.githubusercontent.com/sakaki91/vault/refs/heads/main/vault && bash vault
