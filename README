@@ -12,8 +12,11 @@ It's just a hobby and a way to automate tedious and repetitive tasks.
 
 We also have some documentation if you're interested: https://github.com/sakaki91/vault/wiki
 
+
 Installation:
 -------------
+
+To install, simply run:
 
 	$ curl -Os https://raw.githubusercontent.com/sakaki91/vault/refs/heads/main/vault && bash vault
 
@@ -27,3 +30,12 @@ or if you use zsh/fish, adapt it to your shell's .rc file.
 * But why??
 
 This allows you to call it using only "vault" in the terminal, but using your local binaries folder, without interfering with the system's root directories.
+
+
+Updating:
+---------
+
+To update, simply run:
+
+	$ rm -f $HOME/.local/share/vault
+	$ curl -Os https://raw.githubusercontent.com/sakaki91/vault/refs/heads/main/vault && bash vault
