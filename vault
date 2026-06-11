@@ -1,38 +1,37 @@
 #!/bin/bash
 
 VAULT_DIR="${HOME}/.local/share/vault"
-VAULT_VERSION="0.9"
+VAULT_VERSION="1.0"
 
 [[ ! -d "$VAULT_DIR" ]] && mkdir -p "$VAULT_DIR"/{config,prefix_tree}
 [[ ! -d "$HOME/.local/bin" ]] && mkdir -p "$HOME"/.local/bin
 [[ ! -f "$VAULT_DIR/vault" ]] && cp "$(pwd)/vault" "$VAULT_DIR/" && chmod +x "$VAULT_DIR/vault"
 [[ ! -f "$HOME/.local/bin/vault" ]] && ln -sf "$VAULT_DIR/vault" "$HOME/.local/bin/vault"
 
-function launchGame(){
+function launchBin(){
 	(
 		if [[ ! $(ls "$VAULT_DIR/config") ]]; then
 			printf "No games have been added yet, add them with: vault --add\n"
 		else
 			while true; do
 				clear
-				printf "List of games added:\n\n$(ls "$VAULT_DIR/config")\n\n"
+				printf "List of added binaries:\n\n$(ls "$VAULT_DIR/config")\n\n"
 				cd "$VAULT_DIR"/config
-				read -e -p "$ " launchGameSelection
-				if [[ ! -f "$VAULT_DIR/config/$launchGameSelection" ]]; then
-				        printf "\e[1;91mERROR:\e[0m This option doesn't exist.\n" && sleep 1.5
+				read -e -p "$ " launchBinSelection
+				if [[ ! -f "$VAULT_DIR/config/$launchBinSelection" ]]; then
+				        printf "\e[0;91mERROR:\e[0m This option doesn't exist.\n" && sleep 1.5
 				else
-					source "$VAULT_DIR/config/$launchGameSelection"
-					printf "\e[1;93mWait...\e[0m\n"
-					sleep 1.5
+					source "$VAULT_DIR/config/$launchBinSelection"
 					if [[ $NATIVE_RUNNER == 1 ]]; then
 						chmod +x "$EXEC"
 						"$EXEC"
 					else
+						[[ ! $(command -v wine) ]] && printf "\e[0;91mERROR:\033[0m wine is not installed, install it and try again.\n" && exit
 						WINEPREFIX="$PREFIX" wine "$EXEC"
 						wineserver -w
 					fi
 					sleep 1.5
-					printf "\n\e[1;92mDone!\e[0m\n"
+					printf "\n\e[0;92mDone!\e[0m\n"
 					break			
 				fi
 			done
@@ -40,29 +39,29 @@ function launchGame(){
 	)
 }
 
-function cfgGamePFX(){
+function cfgBinPFX(){
 	(
 		while true; do
 			if [[ ! $(ls "$VAULT_DIR/config") ]]; then
 				printf "No games available for maintenance.\n" && break
 			else
 				clear
-				printf "List of games added:\n"
+				printf "\e[1mList of added binaries:\e[0m\n"
 				printf "\n$(ls "$VAULT_DIR/config")\n\n"	
 				cd "$VAULT_DIR"/config
-				read -e -p "Prefix name for maintenance: " maintGameName
-				if [[ "$maintGameName" == ":q" ]]; then
+				read -e -p "Prefix name for maintenance: " mainBinName
+				if [[ "$mainBinName" == ":q" ]]; then
 					exit
-				elif [[ ! -f "$VAULT_DIR/config/$maintGameName" ]]; then
-					printf "\e[1;91mERROR:\e[0m This option doesn't exist.\n" && sleep 1.5
+				elif [[ ! -f "$VAULT_DIR/config/$mainBinName" ]]; then
+					printf "\e[0;91mERROR:\e[0m This option doesn't exist.\n" && sleep 1.5
 				else
-					source "$maintGameName"
-					if [[ -z "$PREFIX" || "$PREFIX" == "$maintGameName" ]]; then
-						printf "\e[1;91mERROR:\e[0m '$maintGameName' is a Native game and doesn't have a WINEPREFIX.\n"
+					source "$mainBinName"
+					if [[ -z "$PREFIX" || "$PREFIX" == "$mainBinName" ]]; then
+						printf "\e[0;91mERROR:\e[0m '$mainBinName' is a Native game and doesn't have a WINEPREFIX.\n"
 						sleep 2.5
 					else
-						export WINEPREFIX="$PREFIX" && printf "\n\e[1mActive Prefix: $maintGameName ($PREFIX)\n\e[0m\nAny command involving wine/winetricks typed in this shell will be executed exclusively on the prefix selected later.\nTo continue after this, simply type: exit\n\n" && bash
-						printf "\e[1;92mEXIT_SUCCESS\e[0m\n" && break
+						export WINEPREFIX="$PREFIX" && printf "\n\e[1mActive Prefix: $mainBinName ($PREFIX)\n\e[0m\nAny command involving wine/winetricks typed in this shell will be executed exclusively on the prefix selected later.\nTo continue after this, simply type: exit\n\n" && bash
+						printf "\e[0;92mEXIT_SUCCESS\e[0m\n" && break
 					fi
 				fi
 			fi
@@ -70,70 +69,63 @@ function cfgGamePFX(){
 	)
 }
 
-function addGame(){
+function addBin(){
 	while true; do
 		clear
-		read -p "Name: " addGameName
-		read -e -p "Exec: " addGameExec
-		while true; do
-			read -p "Native/Wine: " addGameArq
-			if [[ "$addGameArq" == "Native" || "$addGameArq" == "native" || "$addGameArq" == "Wine" || "$addGameArq" == "wine" ]]; then
-				break 1
-			else
-				printf "\e[1;91mERROR:\e[0m Invalid option.\n" && sleep 1.5
-				clear && printf "Name: $addGameName\nExec: $addGameExec\n"
-			fi
-		done
-		if [[ -z "$addGameName" || -z "$addGameExec" || -z "$addGameArq" ]]; then
-			printf "\e[1;91mERROR:\e[0m Empty value.\n" && sleep 1.5
-		elif [[ "$addGameArq" == "Native" || "$addGameArq" == "native" || "$addGameArq" == "n" ]]; then
+		printf "\e[1mVault $VAULT_VERSION\e[0m\n---------\n"
+		read -p "Name: " addBinName && [[ -z "$addBinName" ]] && printf "\e[0;91mERROR:\e[0m Empty value.\n" && exit
+		read -e -p "Exec: " addBinExec && [[ -z "$addBinExec" ]] && printf "\e[0;91mERROR:\e[0m Empty value.\n" && exit
+		read -p "Native/Wine: " addBinArq && [[ -z "$addBinArq" ]] && printf "\e[0;91mERROR:\e[0m Empty value.\n" && exit
+		if [[ $addBinArq == "Native" || $addBinArq == "native" || $addBinArq == "n" ]]; then
 			(
 				cd "$VAULT_DIR/config"
-				echo "NAME='$addGameName'" > "$addGameName"
-				echo "EXEC='$addGameExec'" >> "$addGameName"
-				echo "NATIVE_RUNNER='1'" >> "$addGameName"
+				echo "NAME='$addBinName'" > "$addBinName"
+				echo "EXEC='$addBinExec'" >> "$addBinName"
+				echo "NATIVE_RUNNER='1'" >> "$addBinName"
 			)
 			break
-		elif [[ "$addGameArq" == "Wine" || "$addGameArq" == "wine" || "$addGameArq" == "w" ]]; then
+		elif [[ $addBinArq == "Wine" || $addBinArq == "wine" || $addBinArq == "w" ]]; then
 		 	(
 				cd "$VAULT_DIR"/config
-				echo "NAME='$addGameName'" > "$addGameName"
-				echo "EXEC='$addGameExec'" >> "$addGameName"
-				echo "PREFIX='$VAULT_DIR/prefix_tree/$addGameName'" >> "$addGameName"
-				mkdir -p "$VAULT_DIR/prefix_tree/$addGameName"
+				echo "NAME='$addBinName'" > "$addBinName"
+				echo "EXEC='$addBinExec'" >> "$addBinName"
+				echo "PREFIX='$VAULT_DIR/prefix_tree/$addBinName'" >> "$addBinName"
+				mkdir -p "$VAULT_DIR/prefix_tree/$addBinName"
 			)
 			break
+		else
+			printf "\e[0;91mERROR:\e[0m Invalid option.\n" && sleep 1.5
 		fi
 	done
 }
 
-function delGame(){
+function delBin(){
 	(
 		while true; do
 			if [[ ! $(ls "$VAULT_DIR/config") ]]; then
 				printf "No games available for removal.\n" && break
 			else
 				clear
-				printf "List of games added:\n"
+				printf "\e[1mList of added binaries:\e[0m\n"
 				printf "\n$(ls "$VAULT_DIR/config")\n\n"	
 				cd "$VAULT_DIR"/config
-				read -e -p "Name of the game to be removed: " delGameName
-				if [[ ! -f "$VAULT_DIR/config/$delGameName" ]]; then
-					printf "\e[1;91mERROR:\e[0m This option doesn't exist.\n" && sleep 1.5
+				read -e -p "Name of the game to be removed: " delBinName
+				if [[ ! -f "$VAULT_DIR/config/$delBinName" ]]; then
+					printf "\e[0;91mERROR:\e[0m This option doesn't exist.\n" && sleep 1.5
 				else
 					while true; do
 						clear
-						printf "Do you really want to remove the $delGameName?\n\n"
-						read -p "[Y/n] " delGameConfirm
-						[[ -z "$delGameConfirm" ]] && delGameConfirm="y"
-						if [[ $delGameConfirm == "Y" || $delGameConfirm == "y" ]]; then
-							rm -rf "$VAULT_DIR/prefix_tree/$delGameName"
-							rm -f "$VAULT_DIR/config/$delGameName"
+						printf "Do you really want to remove the $delBinName?\n\n"
+						read -p "[Y/n] " delBinConfirm
+						[[ -z "$delBinConfirm" ]] && delBinConfirm="y"
+						if [[ $delBinConfirm == "Y" || $delBinConfirm == "y" ]]; then
+							rm -rf "$VAULT_DIR/prefix_tree/$delBinName"
+							rm -f "$VAULT_DIR/config/$delBinName"
 							break 2
-						elif [[ $delGameConfirm == "N" || $delGameConfirm == "n" ]]; then
+						elif [[ $delBinConfirm == "N" || $delBinConfirm == "n" ]]; then
 							break
 						else
-							printf "\e[1;91mERROR:\e[0m Invalid option.\n"
+							printf "\e[0;91mERROR:\e[0m Invalid option.\n"
 							sleep 1.5
 						fi
 					done
@@ -155,22 +147,22 @@ case $1 in
 		if [[ ! $(ls "$VAULT_DIR/config") ]]; then
 			printf "No games added.\n" && exit
 		else
-			printf "\n$(ls "$VAULT_DIR/config")\n\n"
+			printf "\n\e[1mList of added binaries:\e[0m\n\n$(ls "$VAULT_DIR/config")\n\n"
 		fi
 	;;
 	"--launch")
-		launchGame
+		launchBin
 	;;
 	"--add")
-		addGame
+		addBin
 	;;
 	"--del")
-		delGame
+		delBin
 	;;
 	"--configure-prefix")
-		cfgGamePFX
+		cfgBinPFX
 	;;
-	*)
+	*)                                        
 		printf "\nY88b      /                    888   d8	\n"   
 		printf " Y88b    /    /~~~8e  888  888 888 _d88__\n"
 		printf "  Y88b  /         88b 888  888 888  888  \n"
