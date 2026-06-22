@@ -1,7 +1,7 @@
 #!/bin/bash
 
 VAULT_DIR="${HOME}/.local/share/vault"
-VAULT_VERSION="1.3"
+VAULT_VERSION="1.3-1"
 
 [[ ! -d "$VAULT_DIR" ]] && mkdir -p "$VAULT_DIR"/{config,prefix_tree}
 [[ ! -d "$HOME/.local/bin" ]] && mkdir -p "$HOME"/.local/bin
@@ -11,6 +11,7 @@ VAULT_VERSION="1.3"
 function binList(){
     if [[ ! $(ls "$VAULT_DIR/config") ]]; then
 		printf "No binaries have been added yet. Add them with: vault --add\n"
+		exit
 	else
 		printf "\e[1mList of added binaries:\e[0m\n\n$(ls "$VAULT_DIR/config")\n\n"
 		cd "$VAULT_DIR"/config
