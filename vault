@@ -1,7 +1,7 @@
 #!/bin/bash
 
 VAULT_DIR="${HOME}/.local/share/vault"
-VAULT_VERSION="1.4-1"
+VAULT_VERSION="1.4-2"
 
 [[ ! -d "$VAULT_DIR/config" || ! -d "$VAULT_DIR/prefix_tree" ]] && mkdir -p "$VAULT_DIR"/{config,prefix_tree}
 [[ ! -f "$HOME/.local/bin/vault" ]] && ln -sf "$VAULT_DIR/vault" "$HOME/.local/bin/vault"
@@ -38,15 +38,15 @@ function selectBin(){
 }
 
 function runBin(){
+	printf "\e[0;93m:: \e[0mWait...\n"
 	if [[ $NATIVE_RUNNER == 1 ]]; then
 		chmod +x "$EXEC"
-		"$EXEC"
+		"$EXEC" &> "$VAULT_DIR/.last.log"
 	else
-		WINEPREFIX="$PREFIX" wine "$EXEC"
+		WINEPREFIX="$PREFIX" wine "$EXEC" &> "$VAULT_DIR/.last-wine.log"
 		wineserver -w
 	fi
-	sleep 1.5
-	printf "\n\e[0;92m:: \e[0mDone!\n"
+	printf "\e[0;92m:: \e[0mDone!\n"
 }
 
 function cfgBinPFX(){
