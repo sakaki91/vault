@@ -16,11 +16,16 @@ We also have some documentation if you're interested: https://github.com/sakaki9
 Installation:
 -------------
 
-To install, simply run:
+To install, run the following commands:
 
-	$ curl -Os https://raw.githubusercontent.com/sakaki91/vault/refs/heads/main/vault && bash vault
+	$ git clone https://github.com/sakaki91/vault $HOME/.local/share/vault
 
-If you don't have your local binaries folder set up, please run:
+If you don't have a local binaries folder, run this (this will create the directory and make a shortcut to the vault within it):
+
+	$ mkdir -p $HOME/.local/bin
+	$ ln -sf $HOME/.local/share/vault/vault $HOME/.local/bin/
+
+And then add it to your PATH:
 
 	$ echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME"/.bashrc
 
@@ -37,5 +42,15 @@ Updating:
 
 To update, simply run:
 
-	$ rm -f $HOME/.local/share/vault/vault
-	$ curl -Os https://raw.githubusercontent.com/sakaki91/vault/refs/heads/main/vault && bash vault
+	$ cd $HOME/.local/share/vault
+	$ git pull
+
+
+Do you want to delete?
+----------------------
+
+Just delete the directory $HOME/.local/share/vault:
+
+	$ rm -rf $HOME/.local/share/vault
+
+The script does not generate configuration files outside of its own directory.
