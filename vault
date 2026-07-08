@@ -1,7 +1,7 @@
 #!/bin/bash
 
 VAULT_DIR="${HOME}/.local/share/vault"
-VAULT_VERSION="1.4-2"
+VAULT_VERSION="1.4-3"
 
 [[ ! -d "$VAULT_DIR/config" || ! -d "$VAULT_DIR/prefix_tree" ]] && mkdir -p "$VAULT_DIR"/{config,prefix_tree}
 [[ ! -f "$HOME/.local/bin/vault" ]] && ln -sf "$VAULT_DIR/vault" "$HOME/.local/bin/vault"
@@ -12,7 +12,7 @@ function binList(){
 		exit
 	else
 		clear
-		printf "\e[1mList of added binaries:\e[0m\n\n$(ls "$VAULT_DIR/config")\n\n"
+		printf "\e[1mList of added binaries:\n-----------------------\e[0m\n\e[3m\e[1m$(ls "$VAULT_DIR/config")\e[0m\n\n"
 		cd "$VAULT_DIR"/config
     fi
 }
@@ -38,15 +38,13 @@ function selectBin(){
 }
 
 function runBin(){
-	printf "\e[0;93m:: \e[0mWait...\n"
 	if [[ $NATIVE_RUNNER == 1 ]]; then
 		chmod +x "$EXEC"
-		"$EXEC" &> "$VAULT_DIR/.last.log"
+		"$EXEC"
 	else
-		WINEPREFIX="$PREFIX" wine "$EXEC" &> "$VAULT_DIR/.last-wine.log"
+		WINEPREFIX="$PREFIX" wine "$EXEC"
 		wineserver -w
 	fi
-	printf "\e[0;92m:: \e[0mDone!\n"
 }
 
 function cfgBinPFX(){
@@ -63,7 +61,7 @@ function cfgBinPFX(){
 			else
 				source "$mainBinName"
 				if [[ -z "$PREFIX" || "$PREFIX" == "$mainBinName" ]]; then
-					printf "\e[0;91m::\e[0m '$mainBinName' is a native binary, and doesn't have a \e[1mWINEPREFIX\e[0m.\n"
+					printf "\e[0;91m::\e[0m \e[3m\e[1m$mainBinName\e[0m is a native binary, and doesn't have a \e[1mWINEPREFIX\e[0m.\n"
 					sleep 2.5
 				else
 					export WINEPREFIX="$PREFIX" && printf "\n\e[1mActive Prefix :: $mainBinName ($PREFIX)\n\e[0m\nAny command involving wine/winetricks typed in this shell will be executed exclusively on the prefix selected later.\nTo continue after this, simply type: exit\n\n" && bash
@@ -95,8 +93,6 @@ function editBin(){
 }
 
 function addBin(){
-    clear
-    printf "\e[1mVault $VAULT_VERSION\e[0m\n\n"
     read -p "Binary name :: " addBinName && [[ -z "$addBinName" ]] && printf "\e[0;91m::\e[0m Empty value.\n" && exit
 	read -e -p "Binary path :: " addBinExec && [[ -z "$addBinExec" ]] && printf "\e[0;91m::\e[0m Empty value.\n" && exit
     read -p "[native/wine] :: " addBinArq && [[ -z "$addBinArq" ]] && printf "\e[0;91m::\e[0m Empty value.\n" && exit
@@ -123,8 +119,8 @@ function delBin(){
 				printf "\e[0;91m::\e[0m This option doesn't exist.\n" && sleep 1.5
 			else
     			while true; do
-    				clear
-    				printf "Do you really want to remove the \e[1m$delBinName\e[0m?\n\n"
+					clear
+    				printf "Do you really want to remove the \e[3m\e[1m$delBinName\e[0m?\n"
     				read -p "[Y/n] " delBinConfirm
     				[[ -z "$delBinConfirm" ]] && delBinConfirm="y"
     				if [[ $delBinConfirm == "Y" || $delBinConfirm == "y" ]]; then
@@ -180,7 +176,7 @@ case $1 in
 		#The program's ASCII code is displayed on the first line; changing it may affect the user experience.
     	printf '\n                             888   d8   \nY88b    /   /~~~8e  888  888 888 _d88__ \n Y88b  /        88b 888  888 888  888   \n  Y88b/    e88~-888 888  888 888  888   \n   Y8/    C888  888 888  888 888  888   \n    Y      "88_-888 "88_-888 888  "88_/ \n\n'                                
 		printf "\e[1msystem:\e[0m\n"
-		printf " %-20s %0s\n" "--version" "Show vault version."
+		printf " %-20s %0s\n" "-v / --version" "Show vault version."
 		printf " %-20s %0s\n\n" "--dir" "Opens the local vault files."
 		printf "\e[1mlaunch options:\e[0m\n %-20s %0s\n" "--launch" "Launch an added binary."
 		printf " %-20s %0s\n\n" "--launch 'app'" "Launch a binary already added directly using \$2."
