@@ -1,7 +1,7 @@
 #!/bin/bash
 
 VAULT_DIR="${HOME}/.local/share/vault"
-VAULT_VERSION="1.5"
+VAULT_VERSION="1.5-1"
 
 [[ ! -d "$VAULT_DIR/config" || ! -d "$VAULT_DIR/prefix_tree" ]] && mkdir -p "$VAULT_DIR"/{config,prefix_tree}
 
@@ -14,13 +14,8 @@ case $1 in
  	    printf "If nothing happens, go to: \e[1m$HOME/.local/share/vault\e[0m\n"
 	;;
 	"--list")
-		if [[ ! $(ls "$VAULT_DIR/config") ]]; then
-			printf "\e[0;91m::\e[0m No binaries have been added yet.\n\e[1mAdd them with:\e[0m vault --add 'name' 'path' 'native/wine'\e[0m\n"
-			exit
-		else
-			printf "\e[1mList of added binaries:\e[0m\n\e[2m\e[1m $(ls "$VAULT_DIR/config")\e[0m\n"
-			cd "$VAULT_DIR"/config
-		fi
+		[[ ! $(ls "$VAULT_DIR/config") ]] && printf "\e[0;91m::\e[0m No binaries have been added yet.\n\e[1mAdd them with:\e[0m vault --add 'name' 'path' 'native/wine'\e[0m\n" && exit
+		printf "\e[1mList of added binaries:\e[0m\n\e[2m\e[1m $(ls "$VAULT_DIR/config")\e[0m\n"
 	;;
 	"--launch")
 		[[ -z $2 ]] && printf "\e[0;91m::\e[0m Empty value.\n" && exit
