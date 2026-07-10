@@ -1,143 +1,9 @@
 #!/bin/bash
 
 VAULT_DIR="${HOME}/.local/share/vault"
-VAULT_VERSION="1.4-3"
+VAULT_VERSION="1.5"
 
 [[ ! -d "$VAULT_DIR/config" || ! -d "$VAULT_DIR/prefix_tree" ]] && mkdir -p "$VAULT_DIR"/{config,prefix_tree}
-[[ ! -f "$HOME/.local/bin/vault" ]] && ln -sf "$VAULT_DIR/vault" "$HOME/.local/bin/vault"
-
-function binList(){
-    if [[ ! $(ls "$VAULT_DIR/config") ]]; then
-		printf "\e[0;91m::\e[0m No binaries have been added yet.\n\e[1mAdd them with: vault --add\e[0m\n"
-		exit
-	else
-		clear
-		printf "\e[1mList of added binaries:\n-----------------------\e[0m\n\e[3m\e[1m$(ls "$VAULT_DIR/config")\e[0m\n\n"
-		cd "$VAULT_DIR"/config
-    fi
-}
-
-function selectBin(){
-	(
-		while true; do
-			binList
-			read -e -p "Binary name to execute :: " launchBinSelection
-			if [[ -z $launchBinSelection ]]; then
-				printf "\e[0;91m::\e[0m Empty value.\n" && sleep 1.5
-			elif [[ $launchBinSelection == "q" ]]; then
-				exit
-			elif [[ ! -f "$VAULT_DIR/config/$launchBinSelection" ]]; then
-				printf "\e[0;91m::\e[0m This option doesn't exist.\n" && sleep 1.5
-			else
-				source "$VAULT_DIR/config/$launchBinSelection"
-				runBin
-				break
-			fi
-		done
-	)
-}
-
-function runBin(){
-	if [[ $NATIVE_RUNNER == 1 ]]; then
-		chmod +x "$EXEC"
-		"$EXEC"
-	else
-		WINEPREFIX="$PREFIX" wine "$EXEC"
-		wineserver -w
-	fi
-}
-
-function cfgBinPFX(){
-	(
-	    while true; do
-    	    binList
-    	    read -e -p "Prefix name for maintenance :: " mainBinName
-            if [[ -z $mainBinName ]]; then
-                printf "\e[0;91m::\e[0m Empty value.\n" && sleep 1.5
-			elif [[ $mainBinName == "q" ]]; then
-				exit
-            elif [[ ! -f "$VAULT_DIR/config/$mainBinName" ]]; then
-				printf "\e[0;91m::\e[0m This option doesn't exist.\n" && sleep 1.5
-			else
-				source "$mainBinName"
-				if [[ -z "$PREFIX" || "$PREFIX" == "$mainBinName" ]]; then
-					printf "\e[0;91m::\e[0m \e[3m\e[1m$mainBinName\e[0m is a native binary, and doesn't have a \e[1mWINEPREFIX\e[0m.\n"
-					sleep 2.5
-				else
-					export WINEPREFIX="$PREFIX" && printf "\n\e[1mActive Prefix :: $mainBinName ($PREFIX)\n\e[0m\nAny command involving wine/winetricks typed in this shell will be executed exclusively on the prefix selected later.\nTo continue after this, simply type: exit\n\n" && bash
-					printf "\e[0;92m:: \e[0mEXIT_SUCCESS\n" && break
-				fi
-			fi
-		done
-	)
-}
-
-function editBin(){
-	(
-		while true; do
-		    binList
-			read -e -p "Binary name to edit :: " editBinName
-			if [[ -z $editBinName ]]; then
-			    printf "\e[0;91m::\e[0m Empty value.\n" && sleep 1.5
-			elif [[ $editBinName == "q" ]]; then
-				exit
-			elif [[ ! -f "$editBinName" ]]; then
-				printf "\e[0;91m::\e[0m This option doesn't exist.\n" && sleep 1.5
-			else
-			    [[ ! $(command -v vi) ]] && printf "\e[0;91m::\033[0m \e[1mvi\e[0m is not installed, install it and try again.\n" && exit
-				vi "$VAULT_DIR/config/$editBinName"
-				printf "\e[0;92m:: \e[0mEXIT_SUCCESS\n" && break
-			fi
-		done
-	)
-}
-
-function addBin(){
-    read -p "Binary name :: " addBinName && [[ -z "$addBinName" ]] && printf "\e[0;91m::\e[0m Empty value.\n" && exit
-	read -e -p "Binary path :: " addBinExec && [[ -z "$addBinExec" ]] && printf "\e[0;91m::\e[0m Empty value.\n" && exit
-    read -p "[native/wine] :: " addBinArq && [[ -z "$addBinArq" ]] && printf "\e[0;91m::\e[0m Empty value.\n" && exit
-	if [[ $addBinArq == "native" || $addBinArq == "n" || $addBinArq == "wine" || $addBinArq == "w" ]]; then
-		echo "NAME='$addBinName'" > "$VAULT_DIR/config/$addBinName"
-    	echo "EXEC='$addBinExec'" >> "$VAULT_DIR/config/$addBinName"
-		[[ $addBinArq == "native" || $addBinArq == "n" ]] && echo "NATIVE_RUNNER='1'" >> "$VAULT_DIR/config/$addBinName"
-		[[ $addBinArq == "wine" || $addBinArq == "w" ]] && echo "PREFIX='$VAULT_DIR/prefix_tree/$addBinName'" >> "$VAULT_DIR/config/$addBinName" && mkdir -p "$VAULT_DIR/prefix_tree/$addBinName"
-	else
-		printf "\e[0;91m::\e[0m Invalid option.\n" && exit
-	fi
-}
-
-function delBin(){
-	(
-		while true; do
-		    binList
-			read -e -p "Binary name to remove :: " delBinName
-			if [[ -z $delBinName ]]; then
-			    printf "\e[0;91m::\e[0m Empty value.\n" && sleep 1.5
-			elif [[ $delBinName == "q" ]]; then
-				exit
-            elif [[ ! -f "$VAULT_DIR/config/$delBinName" ]]; then
-				printf "\e[0;91m::\e[0m This option doesn't exist.\n" && sleep 1.5
-			else
-    			while true; do
-					clear
-    				printf "Do you really want to remove the \e[3m\e[1m$delBinName\e[0m?\n"
-    				read -p "[Y/n] " delBinConfirm
-    				[[ -z "$delBinConfirm" ]] && delBinConfirm="y"
-    				if [[ $delBinConfirm == "Y" || $delBinConfirm == "y" ]]; then
-    					rm -rf "$VAULT_DIR/prefix_tree/$delBinName"
-    					rm -f "$VAULT_DIR/config/$delBinName"
-    					break 2
-    				elif [[ $delBinConfirm == "N" || $delBinConfirm == "n" ]]; then
-    					break
-    				else
-    					printf "\e[0;91m::\e[0m Invalid option.\n"
-    					sleep 1.5
-    				fi
-    			done
-			fi
-		done
-	)
-}
 
 case $1 in
 	"--version"|"-v")
@@ -148,42 +14,91 @@ case $1 in
  	    printf "If nothing happens, go to: \e[1m$HOME/.local/share/vault\e[0m\n"
 	;;
 	"--list")
-		binList
-	;;
-	"--launch")
-		if [[ ! -z $2 ]]; then
-			[[ ! -f "$VAULT_DIR/config/$2" ]] && printf "\e[0;91m::\e[0m This option doesn't exist.\n" && exit
-			source "$VAULT_DIR/config/$2"
-			runBin
+		if [[ ! $(ls "$VAULT_DIR/config") ]]; then
+			printf "\e[0;91m::\e[0m No binaries have been added yet.\n\e[1mAdd them with:\e[0m vault --add 'name' 'path' 'native/wine'\e[0m\n"
 			exit
 		else
-			selectBin
+			printf "\e[1mList of added binaries:\e[0m\n\e[2m\e[1m $(ls "$VAULT_DIR/config")\e[0m\n"
+			cd "$VAULT_DIR"/config
+		fi
+	;;
+	"--launch")
+		[[ -z $2 ]] && printf "\e[0;91m::\e[0m Empty value.\n" && exit
+		[[ ! -f "$VAULT_DIR/config/$2" ]] && printf "\e[0;91m::\e[0m Invalid option.\n" && exit
+		source "$VAULT_DIR/config/$2"
+		if [[ $NATIVE_RUNNER == 1 ]]; then
+			chmod +x "$EXEC"
+			"$EXEC" && printf "\e[0;92m:: \e[0mEXIT_SUCCESS\n"
+		else
+			[[ ! $(command -v wine) ]] && printf "\e[0;91m::\033[0m \e[1mwine\e[0m is not installed, install it and try again.\n" && exit
+			WINEPREFIX="$PREFIX" wine "$EXEC"
+			wineserver -w && sleep 2 && printf "\e[0;92m:: \e[0mEXIT_SUCCESS\n"
 		fi
 	;;
 	"--edit")
-		editBin
+		[[ -z $2 ]] && printf "\e[0;91m::\e[0m Empty value.\n" && exit
+		[[ ! -f "$VAULT_DIR/config/$2" ]] && printf "\e[0;91m::\e[0m Invalid option.\n" && exit
+		[[ ! $(command -v vi) ]] && printf "\e[0;91m::\033[0m \e[1mvi\e[0m is not installed, install it and try again.\n" && exit
+		vi "$VAULT_DIR/config/$2"
+		printf "\e[0;92m:: \e[0mEXIT_SUCCESS\n"
 	;;
 	"--add")
-		addBin
+		if [[ -z $2 || -z $3 || -z $4 ]]; then
+			printf "\e[0;91m::\e[0m Empty value.\n"
+		else
+			if [[ $4 == "native" || $4 == "n" || $4 == "wine" || $4 == "w" ]]; then
+				echo "NAME='$2'" > "$VAULT_DIR/config/$2"
+				echo "EXEC='$3'" >> "$VAULT_DIR/config/$2"
+				[[ $4 == "native" || $4 == "n" ]] && echo "NATIVE_RUNNER='1'" >> "$VAULT_DIR/config/$2"
+				[[ $4 == "wine" || $4 == "w" ]] && echo "PREFIX='$VAULT_DIR/prefix_tree/$2'" >> "$VAULT_DIR/config/$2" && mkdir -p "$VAULT_DIR/prefix_tree/$2"
+			else
+				printf "\e[0;91m::\e[0m Invalid runner type at \e[1m\$4\e[0m (try 'wine' or 'native').\n"
+			fi
+		fi
 	;;
 	"--del")
-		delBin
+		[[ -z $2 ]] && printf "\e[0;91m::\e[0m Empty value.\n" && exit
+		[[ ! -f "$VAULT_DIR/config/$2" ]] && printf "\e[0;91m::\e[0m Invalid option.\n" && exit
+    	printf "Do you really want to remove the \e[1m'$2'\e[0m?\n"
+    	read -p "[Y/n] " gameConfirmDel
+    	[[ -z "$gameConfirmDel" ]] && gameConfirmDel="y"
+    	if [[ $gameConfirmDel == "Y" || $gameConfirmDel == "y" ]]; then
+			rm -rf "$VAULT_DIR/prefix_tree/$2"
+			rm -f "$VAULT_DIR/config/$2"
+			[[ ! -f "$VAULT_DIR/config/$2" || ! -d "$VAULT_DIR/prefix_tree" ]] && printf "\e[0;92m::\e[0m Binaries successfully removed!\n"
+		elif [[ $gameConfirmDel == "N" || $gameConfirmDel == "n" ]]; then
+			printf "\e[0;93m::\e[0m Cancelled by user.\n" 
+    	else
+    		printf "\e[0;91m::\e[0m Invalid option.\n"
+    	fi		
 	;;
 	"--cfg-pfx")
-		cfgBinPFX
+		[[ -z $2 ]] && printf "\e[0;91m::\e[0m Empty value.\n" && exit
+		[[ ! -f "$VAULT_DIR/config/$2" ]] && printf "\e[0;91m::\e[0m Invalid option.\n" && exit
+		source "$VAULT_DIR/config/$2"
+		if [[ -z "$PREFIX" ]]; then
+			printf "\e[0;91m::\e[0m \e[3m\e[1m$2\e[0m is a native binary, and doesn't have a \e[1mWINEPREFIX\e[0m.\n" && exit
+		else
+			export WINEPREFIX="$PREFIX" && printf "\n\e[1mACTIVE WINEPREFIX :: \e[4m$2\e[0m >>> $PREFIX\n\e[0m\nAny command involving wine/winetricks typed in this shell will be executed exclusively on the prefix selected later.\nTo continue after this, simply type: \e[1mexit\e[0m\n\n" && bash
+			printf "\e[0;92m:: \e[0mEXIT_SUCCESS\n"
+		fi
 	;;
 	*)
-		#The program's ASCII code is displayed on the first line; changing it may affect the user experience.
-    	printf '\n                             888   d8   \nY88b    /   /~~~8e  888  888 888 _d88__ \n Y88b  /        88b 888  888 888  888   \n  Y88b/    e88~-888 888  888 888  888   \n   Y8/    C888  888 888  888 888  888   \n    Y      "88_-888 "88_-888 888  "88_/ \n\n'                                
 		printf "\e[1msystem:\e[0m\n"
-		printf " %-20s %0s\n" "-v / --version" "Show vault version."
-		printf " %-20s %0s\n\n" "--dir" "Opens the local vault files."
-		printf "\e[1mlaunch options:\e[0m\n %-20s %0s\n" "--launch" "Launch an added binary."
-		printf " %-20s %0s\n\n" "--launch 'app'" "Launch a binary already added directly using \$2."
-		printf "\e[1mfunctions:\e[0m\n %-20s %0s\n" "--list" "List the added binaries."
-		printf " %-20s %0s\n" "--edit" "Edits an added binary."
-		printf " %-20s %0s\n" "--add" "Adds a new binary."
-		printf " %-20s %0s\n" "--del" "Remove a binary."
-		printf " %-20s %0s\n\n" "--cfg-pfx" "Opens a subshell with the prefix set for easy maintenance."
+		printf "   %-25s %0s\n" "--version:" "Show vault version."
+		printf "   %-25s %0s\n\n" "--dir" "Opens the local vault files."
+		printf "\e[1mfunctions:\e[0m\n"
+		printf "   %-25s %0s\n" "--list" "List the added binaries."
+		printf "   %-25s %0s\n" "--launch 'app'" "Launch a binary already added directly using \$2."
+		printf "   %-25s %0s\n" "--add" "Adds a new binary."
+		printf "   %-25s %0s\n" "--del" "Remove a binary."
+		printf "   %-25s %0s\n" "--edit" "Edits an added binary."
+		printf "   %-25s %0s\n\n" "--cfg-pfx" "Opens a subshell with the prefix set for easy maintenance."
+		printf "\e[1mexamples:\e[0m\n"
+		printf "   %-12s %0s\n"  "--add" "'Rhythia' 'path to the executable' 'native/wine'"
+		printf "   %-12s %0s\n" "--del" "'Rhythia'"
+		printf "   %-12s %0s\n" "--edit" "'Rhythia'"
+		printf "   %-12s %0s\n" "--cfg-pfx" "'Rhythia'"
+		printf "   %-12s %0s\n\n" "--launch" "'Rhythia'"
 	;;
 esac
