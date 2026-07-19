@@ -6,6 +6,7 @@ It's just a hobby and a way to automate tedious and repetitive tasks.
 
 Installation:
 -------------
+
 To install, run the following commands:
 
    $ git clone https://github.com/sakaki91/vault $HOME/.local/share/vault
@@ -14,29 +15,23 @@ If you don't have a local binaries folder, run this:
 
    $ mkdir -p $HOME/.local/bin
    $ ln -sf $HOME/.local/share/vault/vault $HOME/.local/bin/
-
-this will create the directory and a shortcut to the vault, and then add it to your PATH:
-
    $ echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME"/.bashrc
 
-or if you use zsh/fish, adapt it to your shell's .rc file.
-
-* But why??
-This allows you to call it using only "vault" in the terminal, but using your local binaries folder, without interfering with the system's root directories.
-
+or if you use zsh/fish, adapt it to your shell's .rc (e.g: .zshrc) file.
 
 Updating:
 ---------
+
 To update, simply run:
 
    $ cd $HOME/.local/share/vault
    $ git pull
 
+Deleting:
+---------
 
-Do you want to delete?
-----------------------
 Just delete the directory $HOME/.local/share/vault:
 
-   $ rm -rf $HOME/.local/share/vault
+   $ rm -rf $HOME/.local/share/vault $HOME/.local/bin/vault
 
 The script does not generate configuration files outside of its own directory.
