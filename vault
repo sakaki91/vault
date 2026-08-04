@@ -1,66 +1,100 @@
 #!/bin/bash
 
 VAULT_DIR="${HOME}/.local/share/vault"
-VAULT_VERSION="1.7-1"
+VAULT_VERSION="1.8"
 
-[[ ! -d "$VAULT_DIR/config" || ! -d "$VAULT_DIR/prefix_tree" ]] && mkdir -p "$VAULT_DIR"/{config,prefix_tree}
+binaryCheck(){
+    if [[ -z $1 ]]; then
+        printf "error: no binary selected.\n" && exit
+    elif [[ ! -f "$VAULT_DIR/config/$1" ]]; then
+        printf "error: this binary was not added.\n" && exit
+    fi
+}
 
 case $1 in
 	"--help"|"-h")
-		printf "\e[1msys:\e[0m\n%-20s %0s\n" " -h  | --help" ":: show this message."
-        printf "%-20s %0s\n\n" " -v  | --version" ":: shows the version."
-        printf "\e[1moperations:\e[0m\n%-15s %0s\n" " --add" ":: adds a new binary."
-		printf "%-15s %0s\n" " --del" ":: remove a binary."
-		printf "%-15s %0s\n" " --list" ":: list the added binaries."
-		printf "%-15s %0s\n" " --launch" ":: launch a binary already added directly using \$2."
-		printf "%-15s %0s\n" " --edit" ":: edits an added binary."
-		printf "%-15s %0s\n\n" " --cfg-pfx" ":: opens a subshell with the prefix set for easy maintenance."
-        printf "\e[1musage: vault 'operation' [...]\e[0m\n"
+        printf "%-20s%0s\n" "-h, --help" "show this message."
+        printf "%-20s%0s\n\n" "-v, --version" "shows the version."
+        printf "\033[1m\033[4moperations:\033[0m\n"
+        printf "%-15s %0s\n" " --add" "adds a new binary."
+		printf "%-15s %0s\n" " --del" "remove a binary."
+		printf "%-15s %0s\n" " --list" "list the added binaries."
+		printf "%-15s %0s\n" " --launch" "launch a binary already added directly using \$2."
+		printf "%-15s %0s\n" " --edit" "edits an added binary."
+		printf "%-15s %0s\n\n" " --cfg-pfx" "opens a subshell with the prefix set for easy maintenance."
+        printf "\e[1musage: vault 'operation' [...]\e[0m\n\n"
 	;;
-	"--version"|"-v") printf "vault-$VAULT_VERSION\n" ;;
+	"--version"|"-v")
+        printf "vault-$VAULT_VERSION\n"
+    ;;
 	"--list")
-		[[ ! $(ls "$VAULT_DIR/config") ]] && printf "\e[0;91merror:\e[0m no binary files found, please add one first.\n" && exit
-		printf "\e[2m\e[1m$(ls "$VAULT_DIR/config" -p -1)\e[0m\n"
+        for listpresent in $VAULT_DIR/config/*; do
+            ALL_PRESENT=$(basename $listpresent)
+            if [[ $ALL_PRESENT == "*" ]]; then
+                printf "error: no binary files found.\n"
+            else
+                printf "$ALL_PRESENT\n"
+            fi
+        done
 	;;
 	"--launch")
-		[[ -z $2 ]] && printf "\e[0;91merror:\e[0m no binary selected.\n" && exit
-		[[ ! -f "$VAULT_DIR/config/$2" ]] && printf "\e[0;91merror:\e[0m this binary was not added.\n" && exit
-		source "$VAULT_DIR/config/$2"
-		if [[ $NATIVE_RUNNER == 1 ]]; then
-			chmod +x "$EXEC" && "$EXEC"
-		elif [[ ! -z $PREFIX ]]; then
-			[[ ! $(command -v wine) ]] && printf "\e[0;91merror:\033[0m \e[1mwine\e[0m is not installed, install it and try again.\n" && exit
-			WINEPREFIX="$PREFIX" wine "$EXEC" && wineserver -w
-		fi
+        binaryCheck "$2"
+        . "$VAULT_DIR/config/$2"
+	    if [[ $NATIVE_RUNNER == 1 ]]; then
+            $EXEC 
+            if [[ $? -ne 0 ]]; then
+                chmod +x $EXEC
+                printf "error: binary without permission (\033[1;92mexecute permission granted\033[0m, please run it again).\n"
+            fi
+        elif [[ ! -z $PREFIX ]]; then
+		    if [[ ! $(command -v wine) ]]; then
+                printf "error: \033[1m'wine'\033[0m is not installed, install it and try again.\n"
+            else
+                WINEPREFIX="$PREFIX" wine "$EXEC" && wineserver -w
+		    fi
+        fi
 	;;
 	"--add")
-		[[ -z $2 || -z $3 || -z $4 ]] && printf "\e[0;91merror:\e[0m the values ​​are empty.\ntry: \e[1mvault --add 'name' 'path to execution' 'wine/native'\e[0m\n" && exit
-		[[ $4 != "native" && $4 != "wine" ]] && printf "\e[0;91merror:\e[0m invalid runner type at \e[1m\$4\e[0m (try 'wine' or 'native').\n" && exit
+        if [[ -z $2 || -z $3 || -z $4 ]]; then
+            printf "error: the values are empty.\ntry: vault --add 'name' 'path to execution' 'wine/native'\n" && exit
+    	elif [[ $4 != "native" && $4 != "wine" ]]; then
+            printf "error: invalid runner type at \033[1m\$4\033[0m (try 'wine' or 'native').\n" && exit
+        fi
 		echo "NAME='$2'" > "$VAULT_DIR/config/$2"
 		echo "EXEC='$3'" >> "$VAULT_DIR/config/$2"
-		[[ $4 == "native" ]] && echo "NATIVE_RUNNER='1'" >> "$VAULT_DIR/config/$2"
-		[[ $4 == "wine" ]] && echo "PREFIX='$VAULT_DIR/prefix_tree/$2'" >> "$VAULT_DIR/config/$2" && mkdir -p "$VAULT_DIR/prefix_tree/$2"
+		if [[ $4 == "native" ]]; then
+            echo "NATIVE_RUNNER='1'" >> "$VAULT_DIR/config/$2"
+        elif [[ $4 == "wine" ]]; then
+            echo "PREFIX='$VAULT_DIR/prefix_tree/$2'" >> "$VAULT_DIR/config/$2" && mkdir -p "$VAULT_DIR/prefix_tree/$2"
+        fi
 	;;
 	"--del")
-		[[ -z $2 ]] && printf "\e[0;91merror:\e[0m no binary selected.\n" && exit
-		[[ ! -f "$VAULT_DIR/config/$2" ]] && printf "\e[0;91merror:\e[0m this binary was not added.\n" && exit
-		rm -rf "$VAULT_DIR/prefix_tree/$2"
+		binaryCheck "$2"
+        rm -rf "$VAULT_DIR/prefix_tree/$2"
 		rm -f "$VAULT_DIR/config/$2"
-		[[ ! -f "$VAULT_DIR/config/$2" || ! -d "$VAULT_DIR/prefix_tree" ]] && printf "\e[0;92m::\e[0m \e[3m\e[1m'$2'\e[0m has been removed.\n"
+		if [[ ! -f "$VAULT_DIR/config/$2" || ! -d "$VAULT_DIR/prefix_tree" ]]; then
+            printf "\033[0;92m*\033[0m '$2' has been removed.\n"
+        fi
 	;;
 	"--edit")
-		[[ -z $2 ]] && printf "\e[0;91merror:\e[0m no binary selected.\n" && exit
-		[[ ! -f "$VAULT_DIR/config/$2" ]] && printf "\e[0;91merror:\e[0m this binary was not added.\n" && exit
-		[[ ! $(command -v vi) ]] && printf "\e[0;91merror:\033[0m \e[1mvi\e[0m is not installed, install it and try again.\n" && exit
-		vi "$VAULT_DIR/config/$2"
+		binaryCheck "$2"
+        if [[ ! $(command -v vim) ]]; then
+            printf "error: \033[1m'vim'\033[0m is not installed, install it and try again.\n"
+        else
+		    vim "$VAULT_DIR/config/$2"
+        fi
 	;;
 	"--cfg-pfx")
-		[[ -z $2 ]] && printf "\e[0;91merror:\e[0m no binary selected.\n" && exit
-		[[ ! -f "$VAULT_DIR/config/$2" ]] && printf "\e[0;91merror:\e[0m this binary was not added.\n" && exit
-		source "$VAULT_DIR/config/$2"
-		[[ -z $PREFIX ]] && printf "\e[0;91merror:\e[0m \e[3m\e[1m'$2'\e[0m is a native binary, and doesn't have a \e[1mWINEPREFIX\e[0m.\n" && exit
-		export WINEPREFIX="$PREFIX" && printf "\n\e[1mACTIVE WINEPREFIX :: \e[4m$2\e[0m\n\e[0m\nAny command involving wine/winetricks typed in this shell will be executed exclusively on the prefix selected later.\n\nTo continue after this, simply type: \e[1mexit\e[0m\n\n" && bash
-		printf "\e[0;92m:: \e[0mEXIT_SUCCESS\n"
+        binaryCheck "$2"
+		. "$VAULT_DIR/config/$2"
+		if [[ -z $PREFIX ]]; then
+            printf "error: '$2' is a native binary, and doesn't have a \033[1mWINEPREFIX\033[0m.\n"
+        else
+		    export WINEPREFIX="$PREFIX"
+            printf "\033[4m\033[1mActive WINEPREFIX\033[0m --> $2\n"
+            printf "Any command involving wine/winetricks typed in this shell will be executed exclusively on the prefix selected later.\n\033[1mTo continue after this, simply type: exit\033[0m\n" && bash
+            printf "\033[0;92m*\033[0m EXIT_SUCCESS\n"
+        fi
 	;;
-	*) printf "\e[0;91merror:\e[0m -h for help\n" ;;
+	*) printf "usage: vault <operation> ...\n" ;;
 esac
