@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VAULT_DIR="${HOME}/.local/share/vault"
+VAULT_DIR=$HOME/.local/share/vault
 VAULT_VERSION="1.8"
 
 binaryCheck(){
@@ -65,7 +65,8 @@ case $1 in
 		if [[ $4 == "native" ]]; then
             echo "NATIVE_RUNNER='1'" >> "$VAULT_DIR/config/$2"
         elif [[ $4 == "wine" ]]; then
-            echo "PREFIX='$VAULT_DIR/prefix_tree/$2'" >> "$VAULT_DIR/config/$2" && mkdir -p "$VAULT_DIR/prefix_tree/$2"
+            echo "PREFIX='$VAULT_DIR/prefix_tree/$2'" >> "$VAULT_DIR/config/$2"
+            mkdir -p "$VAULT_DIR/prefix_tree/$2"
         fi
 	;;
 	"--del")
